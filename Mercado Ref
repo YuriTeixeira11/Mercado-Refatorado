@@ -1,0 +1,223 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <conio.h>
+#include "structs.h"
+
+void ExibirProduto(struct Produto produto) {
+    printf("Nome: %s\n", produto.nome);
+    printf("Preco: %.2f\n", produto.preco);
+    printf("Codigo: %d\n", produto.codigo);
+    printf("----------------------------\n\n");
+}
+
+void CadastrarProduto(struct Produto produto[], int *qnt) {
+    int novoProduto, i;
+    
+    printf("Quantos produtos deseja cadastrar? ");
+    scanf("%d", &novoProduto);
+    system("cls");
+
+    for (i = *qnt; i < (*qnt + novoProduto); i++) {
+        printf("Produto %d\n\n", i + 1);
+        printf("Codigo: ");
+        scanf("%d", &produto[i].codigo);
+
+        printf("Nome: ");
+        scanf(" %50[^\n]", produto[i].nome);
+
+        printf("Preco: ");
+        scanf("%f", &produto[i].preco);
+
+        system("cls");
+    }
+    *qnt += novoProduto;
+    printf("Produtos cadastrados com sucesso!\n");
+    system("pause");
+    system("cls");
+}
+
+void ListarProdutos(struct Produto produto[], int qnt) {
+    printf("Listando Produtos\n\n");
+
+    if (qnt == 0) {
+        printf("Nenhum produto cadastrado.\n\n");
+    } else {
+        for (int i = 0; i < qnt; i++) {
+            printf("Produto %d\n", i + 1);
+            ExibirProduto(produto[i]);
+        }
+    }
+    system("pause");
+    system("cls");
+}
+
+void SalvarProdutos(struct Produto produto[], int qnt) {
+    FILE *arquivo = fopen("produtos.csv", "w");
+
+    if (arquivo == NULL) {
+        printf("Erro ao criar o arquivo!\n");
+        return;
+    }
+
+    fprintf(arquivo, "Codigo;Nome;Preco\n");
+
+    for (int i = 0; i < qnt; i++) {
+        fprintf(arquivo, "%d;%s;%.2f\n", produto[i].codigo, produto[i].nome, produto[i].preco);
+    }
+
+    fclose(arquivo);
+    printf("Arquivo 'produtos.csv' gerado com sucesso!\n");
+    system("pause");
+    system("cls");
+}
+
+void AdicionarAoCarrinho(struct Produto produto[], struct Carrinho carrinho[], int qnt, int *quant, int cod[]) {
+    int codigoProd, qtdDesejada, quantidade;
+
+    printf("Quantos produtos deseja comprar? ");
+    scanf("%d", &qtdDesejada);
+
+    if (qtdDesejada > qnt || qtdDesejada <= 0) {
+        printf("Numero invalido para compra de produtos.\n");
+        system("pause");
+        system("cls");
+        return;
+    }
+
+    for (int i = 0; i < qtdDesejada; i++) {
+        printf("Codigo do produto que deseja comprar: ");
+        scanf("%d", &codigoProd);
+
+        int encontrado = 0;
+        for (int j = 0; j < *quant; j++) {
+            if (cod[j] == codigoProd) {
+                printf("Produto já no carrinho. Quantidade atual: %d\n", carrinho[j].quantidade);
+                printf("Quantidade adicional: ");
+                scanf("%d", &quantidade);
+                carrinho[j].quantidade += quantidade;
+                encontrado = 1;
+                break;
+            }
+        }
+
+        if (!encontrado) {
+            for (int j = 0; j < qnt; j++) {
+                if (produto[j].codigo == codigoProd) {
+                    printf("Quantidade: ");
+                    scanf("%d", &quantidade);
+                    carrinho[*quant].produto = produto[j];
+                    carrinho[*quant].quantidade = quantidade;
+                    cod[*quant] = codigoProd;
+                    (*quant)++;
+                    break;
+                }
+            }
+        }
+    }
+    system("pause");
+    system("cls");
+}
+
+void VisualizarCarrinho(struct Carrinho carrinho[], int quant) {
+    if (quant == 0) {
+        printf("Carrinho vazio.\n");
+    } else {
+        for (int i = 0; i < quant; i++) {
+            printf("Produto %d no carrinho:\n", i + 1);
+            ExibirProduto(carrinho[i].produto);
+            printf("Quantidade: %d\n", carrinho[i].quantidade);
+        }
+    }
+    system("pause");
+    system("cls");
+}
+
+void RemoverProdutoCarrinho(struct Carrinho carrinho[], int *quant, int cod[]) {
+    int codigoProd;
+    
+    if (*quant == 0) {
+        printf("Carrinho vazio.\n");
+        system("pause");
+        return;
+    }
+
+    printf("Digite o codigo do produto para remover: ");
+    scanf("%d", &codigoProd);
+
+    int encontrado = 0;
+    for (int i = 0; i < *quant; i++) {
+        if (carrinho[i].produto.codigo == codigoProd) {
+            for (int j = i; j < *quant - 1; j++) {
+                carrinho[j] = carrinho[j + 1];
+                cod[j] = cod[j + 1];
+            }
+            (*quant)--;
+            printf("Produto removido com sucesso!\n");
+            encontrado = 1;
+            break;
+        }
+    }
+
+    if (!encontrado) {
+        printf("Produto nao encontrado no carrinho.\n");
+    }
+    system("pause");
+    system("cls");
+}
+
+void FinalizarPedido(struct Carrinho carrinho[], int *quant) {
+    float soma = 0;
+
+    if (*quant == 0) {
+        printf("Carrinho vazio.\n\n");
+    } else {
+        for (int i = 0; i < *quant; i++) {
+            float valorItem = carrinho[i].produto.preco * carrinho[i].quantidade;
+            soma += valorItem;
+            printf("Produto: %s\n", carrinho[i].produto.nome);
+            printf("Preco unitario: %.2f\n", carrinho[i].produto.preco);
+            printf("Quantidade: %d\n", carrinho[i].quantidade);
+            printf("Total: %.2f\n", valorItem);
+        }
+        printf("Valor total da compra: %.2f\n", soma);
+        *quant = 0;
+    }
+    system("pause");
+    system("cls");
+}
+
+void MenuPrincipal(struct Produto produto[], struct Carrinho carrinho[], int *qnt, int *quant, int cod[]) {
+    int opcao;
+
+    while (1) {
+        printf("Menu Principal\n");
+        printf("[1] Cadastrar Produtos\n[2] Listar Produtos\n[3] Salvar Produtos\n[4] Adicionar ao Carrinho\n");
+        printf("[5] Visualizar Carrinho\n[6] Remover do Carrinho\n[7] Finalizar Pedido\n[8] Sair\n");
+        
+        opcao = getch();
+        system("cls");
+
+        switch (opcao) {
+            case '1': CadastrarProduto(produto, qnt); break;
+            case '2': ListarProdutos(produto, *qnt); break;
+            case '3': SalvarProdutos(produto, *qnt); break;
+            case '4': AdicionarAoCarrinho(produto, carrinho, *qnt, quant, cod); break;
+            case '5': VisualizarCarrinho(carrinho, *quant); break;
+            case '6': RemoverProdutoCarrinho(carrinho, quant, cod); break;
+            case '7': FinalizarPedido(carrinho, quant); break;
+            case '8': printf("Saindo...\n"); return;
+            default: printf("Opcao invalida.\n"); system("pause"); system("cls");
+        }
+    }
+}
+
+int main() {
+    struct Produto produto[50];
+    struct Carrinho carrinho[50];
+    int qnt = 0;
+    int quant = 0;
+    int cod[50];
+    
+    MenuPrincipal(produto, carrinho, &qnt, &quant, cod);
+    return 0;
+}
